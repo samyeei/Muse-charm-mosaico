@@ -15,7 +15,8 @@
     "mute"
   ],
   "native_8_state_character_pack": true,
-  "host_fault_tests_20261023": 11,
+  "host_fault_tests_20261023": 12,
   "hardware_validated": false,
-  "application_host_tests_20261023": 18
+  "application_host_tests_20261023": 18,
+  "startup_single_transport_registration_test": true
 }

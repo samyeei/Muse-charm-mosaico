@@ -14,7 +14,7 @@
   "patches": [
     {
       "file": "tools/patches/muse-vibe-0.2.patch",
-      "sha256": "f16c63ad665340ce0d5e5f3f0acef5c432c12ffd8dec30a222fee71ece8ea321",
+      "sha256": "205ccdfb36ce15e0b10826e4d6ba902d4d60646ed7b385e191a839e24f595aff",
       "submodule": "submodule/esp-mosaico-utils"
     }
   ]
