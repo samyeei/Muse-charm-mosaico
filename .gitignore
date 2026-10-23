@@ -3,6 +3,8 @@
 **/sdkconfig
 **/sdkconfig.old
 **/.codex-runs/
+**/.gateway/
+**/.pytest_cache/
 **/__pycache__/
 **/*.py[cod]
 **/local_secrets.h
