@@ -1,3 +1,79 @@
+diff --git a/ESP-Iris/components/esp_iris/tools/iris_gateway/usb_descriptors.py b/ESP-Iris/components/esp_iris/tools/iris_gateway/usb_descriptors.py
+index 33d9692..4125496 100644
+--- a/ESP-Iris/components/esp_iris/tools/iris_gateway/usb_descriptors.py
++++ b/ESP-Iris/components/esp_iris/tools/iris_gateway/usb_descriptors.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ 
+ import copy
+ import plistlib
++import re
+ import subprocess
+ import sys
+ from typing import Any
+@@ -95,6 +96,8 @@ def _mac_interfaces() -> dict[str, dict[str, Any]]:
+ 
+ def serial_ports() -> list[Any]:
+     ports = list(list_ports.comports())
++    if sys.platform == "win32":
++        return [_windows_port(port) for port in ports]
+     if sys.platform != "darwin":
+         return ports
+     descriptors = _mac_interfaces() if ports else {}
+@@ -119,6 +122,18 @@ def serial_ports() -> list[Any]:
+     return list(result.values())
+ 
+ 
++def _windows_port(original: Any) -> Any:
++    """pySerial exposes Windows MI numbers in location, but no interface name."""
++    if (original.vid, original.pid) != (0x303A, 0x4002):
++        return original
++    port = copy.copy(original)
++    match = re.search(r":(?:x|[0-9]+)\.([0-9]+)$", getattr(port, "location", None) or "")
++    number = int(match.group(1)) if match else None
++    port.interface = _IRIS_INTERFACES.get(number, "")
++    port.iris_link_role = {0: "control", 2: "data"}.get(number, "unknown")
++    return port
++
++
+ def link_role(port: Any) -> str:
+     return getattr(port, "iris_link_role", None) or (
+         "data" if getattr(port, "interface", None) == "ESP-Iris 0.2 data" else "control")
+diff --git a/ESP-Iris/components/esp_iris/tools/tests/test_windows_usb.py b/ESP-Iris/components/esp_iris/tools/tests/test_windows_usb.py
+new file mode 100644
+index 0000000..3302fa3
+--- /dev/null
++++ b/ESP-Iris/components/esp_iris/tools/tests/test_windows_usb.py
+@@ -0,0 +1,30 @@
++"""Windows descriptor role mapping; no serial ports are opened."""
++from types import SimpleNamespace
++
++import pytest
++
++from iris_gateway import discovery, usb_descriptors
++
++
++@pytest.mark.parametrize("locations", [("1-8:x.0", "1-8:x.2"), ("2-1:1.0", "2-1:1.2")])
++def test_windows_dual_cdc_roles(monkeypatch, locations):
++    ports = [SimpleNamespace(device=f"COM{i + 3}", vid=0x303A, pid=0x4002,
++                             serial_number="same", location=location, interface=None, product=None)
++             for i, location in enumerate(locations)]
++    monkeypatch.setattr(usb_descriptors.sys, "platform", "win32")
++    monkeypatch.setattr(usb_descriptors.list_ports, "comports", lambda: ports)
++    devices = discovery.discover_iris_usb_devices()
++    assert [device.link_role for device in devices] == ["control", "data"]
++    assert discovery.resolve_usb_port("COM4")["link_role"] == "data"
++    assert ports[1].interface is None
++
++
++@pytest.mark.parametrize("location", [None, "1-8", "1-8:x.4"])
++def test_unknown_interface_is_not_guessed(location):
++    port = SimpleNamespace(vid=0x303A, pid=0x4002, location=location)
++    assert usb_descriptors._windows_port(port).iris_link_role == "unknown"
++
++
++def test_other_usb_products_unchanged():
++    port = SimpleNamespace(vid=0x303A, pid=0x20)
++    assert usb_descriptors._windows_port(port) is port
 diff --git a/esp-mosaico-vibe-mode/cmake/character_install_policy.cmake b/esp-mosaico-vibe-mode/cmake/character_install_policy.cmake
 new file mode 100644
 index 0000000..c6d0896

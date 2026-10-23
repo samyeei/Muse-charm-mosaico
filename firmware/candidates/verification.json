@@ -18,5 +18,10 @@
   "host_fault_tests_20261023": 12,
   "hardware_validated": false,
   "application_host_tests_20261023": 18,
-  "startup_single_transport_registration_test": true
+  "startup_single_transport_registration_test": true,
+  "abi2_rom_migration": true,
+  "system_update_hardware_install": true,
+  "original_character_hardware_screenshot": true,
+  "initial_provisioning_required_on_test_device": true,
+  "windows_usb_descriptor_tests": 23
 }

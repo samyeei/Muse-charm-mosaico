@@ -42,3 +42,12 @@ Gateway，再用本仓库配套定制 Vibe Mode 经 ROM 迁移，最后安装应
 `compatibility_frozen` 在验收前保持 `false`。
 
 后续更新以 [GitHub 仓库](https://github.com/samyeei/Muse-charm-mosaico) 为准。
+
+## 2026-10-23 真机进展
+
+同一台设备已完成 ROM 迁移至定制 Vibe Mode 0.2，再通过正式 system-update
+安装 2.0.0 应用。应用健康检查、ELF 校验和初始白色角色截图已通过。
+Windows 的双 CDC 角色识别已修正，相关 Windows/macOS 描述符测试共 23 项通过。
+
+当前测试设备显示首次配置入口，需完成手机配置与配对，再验证真实对话、千问朗读、
+角色安装和恢复。上述安装结果不代表全部功能验收完成，暂不发布稳定版。
