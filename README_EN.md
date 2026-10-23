@@ -1,11 +1,10 @@
 # Muse Charm · Mosaico
 
-> **2.0 migration candidate**: the application and companion Vibe Mode build and
-> pass the official 0.2 bundle checks. The original character and gesture UI pass
-> the new native simulator checks. Device acceptance is still pending.
-> See [migration notes](docs/V2_MIGRATION_CN.md). Do not use the legacy firmware
-> or Recovery installation sequence on this branch. The verified first release
-> remains on [main](https://github.com/samyeei/Muse-charm-mosaico/tree/main).
+> **Muse Charm 2.0** uses Vibe Mode 0.2 / ABI 2. The original character, voice chat,
+> Qwen playback and gesture UI passed user acceptance. Character installation and
+> restore on ABI 2 still await validation. Read the [migration notes](docs/V2_MIGRATION_CN.md).
+> [Download firmware](firmware/v2.0.0/muse-charm-v2.0.0.irisfw) ·
+> [Retained first-generation source](https://github.com/samyeei/Muse-charm-mosaico/tree/8d94c42).
 
 A voice AI companion for ESP-Mosaico, powered by Muse Gadget SDK, with push-to-talk conversation, Qwen speech, eight animated character states, Chinese/English UI and phone Wi-Fi setup. Generate and replace characters through Muse.
 
@@ -25,12 +24,12 @@ Bring your own Muse SDK token and TTS API key. The source and included firmware 
 
 Connect your ESP-Mosaico with a USB data cable, then send this prompt to Codex or another local agent with access to your computer and USB device:
 
-> Check the release status of https://github.com/samyeei/Muse-charm-mosaico first. For a migration candidate, only initialize dependencies, build and preview in the simulator. Install only a device-validated stable release, using mosaico.py and its documented migration procedure; preserve device identity, credentials and NAND data, avoid whole-flash erasure, and verify startup, pairing, text replies and speech.
+> Install version 2.0 from https://github.com/samyeei/Muse-charm-mosaico on my USB Mosaico. Read the ABI 2 migration notes first, identify the current ABI, install this repository's custom Vibe Mode 0.2 when required, then install the full bundle in firmware/v2.0.0/. Use mosaico.py; preserve identity, credentials and NAND data without whole-flash erasure. Voice, speech and UI passed device acceptance; ABI 2 character transactions remain under validation. Verify the UI, text replies and speech after installation.
 
 The agent needs local file, network and device access. It may request permissions or ask you to enter recovery mode physically. After installation, enter your own credentials on the phone configuration page; see the [illustrated guide (Chinese)](docs/SETUP_CN.md).
 
 ## Manual installation
 
-Install Python 3.10+ and Git, run `python tools/bootstrap.py`, then read the [2.0 migration notes](docs/V2_MIGRATION_CN.md) and [build guide](docs/BUILDING.md). This candidate requires Vibe Mode 0.2 / ABI 2; legacy installation commands do not apply. The unvalidated 2.0 application candidate is in `firmware/candidates/`; keep using main for the verified first release. Device operations use `mosaico.py`; do not erase the whole flash. Video and accessory light-sensor integration are not implemented. The simulator mocks cloud/audio services.
+Install Python 3.10+ and Git, run `python tools/bootstrap.py`, then read the [2.0 migration notes](docs/V2_MIGRATION_CN.md) and [build guide](docs/BUILDING.md). This candidate requires Vibe Mode 0.2 / ABI 2; legacy installation commands do not apply. The published 2.0 firmware is in `firmware/v2.0.0/`. Voice and gestures passed user acceptance; ABI 2 character transactions still await validation. Device operations use `mosaico.py`; do not erase the whole flash. Video and accessory light-sensor integration are not implemented. The simulator mocks cloud/audio services.
 
 Application code: Apache-2.0. Bundled SDK and fonts retain their licenses; see NOTICE. Dependency revisions are pinned in DEPENDENCIES.json. The internal firmware project remains `muse_companion`.

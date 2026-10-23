@@ -1,0 +1,60 @@
+{
+  "schema": "mosaico-ideas/project-release/1",
+  "project": {
+    "title": "Muse Charm 2.0 · 会聊天的毛绒 AI 伙伴",
+    "categories": [
+      "audio",
+      "display",
+      "communication"
+    ],
+    "boards": [
+      "battery"
+    ],
+    "tags": [
+      "Muse",
+      "AI",
+      "Qwen",
+      "语音助手"
+    ],
+    "license": "Apache-2.0; third-party licenses retained",
+    "external_links": [
+      {
+        "label": "GitHub",
+        "url": "https://github.com/samyeei/Muse-charm-mosaico",
+        "platform": "github"
+      }
+    ]
+  },
+  "website": {
+    "readme": "publication/README.md",
+    "changelog": "publication/CHANGELOG.md",
+    "covers": [
+      "publication/cover-3x2.png"
+    ],
+    "resources": [
+      "publication/device-preview.png"
+    ],
+    "attachments": [
+      "publication/verification.json"
+    ]
+  },
+  "device": {
+    "default_locale": "zh-CN",
+    "presentations": {
+      "zh-CN": {
+        "mode": "generate",
+        "name": "Muse Charm 2.0",
+        "description": "按住 AI 键说话，松开发送。Muse 对话、千问朗读、中英界面；下拉设置，点击文字框展开阅读。换装待联调。",
+        "font": "tools/character_template/fonts/NotoSansSC-Regular.ttf",
+        "icon": "ui/assets/idle.png"
+      },
+      "en": {
+        "mode": "generate",
+        "name": "Muse Charm 2.0",
+        "description": "Hold AI to talk, release to send. Muse chat, Qwen speech, English/Chinese UI. Pull down for settings. Character updates await validation.",
+        "font": "tools/character_template/fonts/NotoSansSC-Regular.ttf",
+        "icon": "ui/assets/idle.png"
+      }
+    }
+  }
+}

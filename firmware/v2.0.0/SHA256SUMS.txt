@@ -1,0 +1,1 @@
+e567248d77fbdf54eb22d2bc66255bf6171cb382c661d1d29e7ac49779af9cf3  muse-charm-v2.0.0.irisfw

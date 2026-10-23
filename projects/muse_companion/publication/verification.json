@@ -1,0 +1,43 @@
+{
+  "official_product_validation": "PASS",
+  "schema": "esp-iris-system-update/0.2",
+  "release": "2.0.0",
+  "sha256": "e567248d77fbdf54eb22d2bc66255bf6171cb382c661d1d29e7ac49779af9cf3",
+  "size": 7348360,
+  "gsp_runtime": "1.5.1",
+  "gspc": "0.6.1",
+  "recovery_abi": 2,
+  "native_ui_flows": [
+    "idle",
+    "settings-return",
+    "inside-keeps-expanded",
+    "scroll",
+    "mute"
+  ],
+  "native_8_state_character_pack": true,
+  "host_fault_tests_20261023": 12,
+  "hardware_validated": false,
+  "application_host_tests_20261023": 18,
+  "startup_single_transport_registration_test": true,
+  "abi2_rom_migration": true,
+  "system_update_hardware_install": true,
+  "original_character_hardware_screenshot": true,
+  "initial_provisioning_required_on_test_device": true,
+  "windows_usb_descriptor_tests": 23,
+  "user_device_acceptance_20261023": [
+    "original-white-character",
+    "hold-ai-release-send",
+    "text-reply",
+    "tts-playback",
+    "pull-down-settings",
+    "swipe-up-return",
+    "dialogue-expand",
+    "dialogue-scroll",
+    "no-black-screen-or-reboot"
+  ],
+  "provisioning_completed_user_report": true,
+  "character_download_install_restore_hardware": "pending",
+  "publication_requested_before_character_acceptance": true,
+  "initial_backup_hardware_verified": true,
+  "character_compatibility_frozen": false
+}

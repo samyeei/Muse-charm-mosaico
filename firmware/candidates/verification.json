@@ -23,5 +23,18 @@
   "system_update_hardware_install": true,
   "original_character_hardware_screenshot": true,
   "initial_provisioning_required_on_test_device": true,
-  "windows_usb_descriptor_tests": 23
+  "windows_usb_descriptor_tests": 23,
+  "user_device_acceptance_20261023": [
+    "original-white-character",
+    "hold-ai-release-send",
+    "text-reply",
+    "tts-playback",
+    "pull-down-settings",
+    "swipe-up-return",
+    "dialogue-expand",
+    "dialogue-scroll",
+    "no-black-screen-or-reboot"
+  ],
+  "provisioning_completed_user_report": true,
+  "character_download_install_restore_hardware": "pending"
 }

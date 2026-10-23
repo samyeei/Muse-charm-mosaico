@@ -10,7 +10,7 @@
   "gspc": "0.6.1",
   "recovery_abi": 2,
   "recovery_bsp_commit": "05e067de0613a0aa3fe2af42e75616804decbf4b",
-  "release_status": "candidate-awaiting-device-validation",
+  "release_status": "public-preview-character-transactions-awaiting-validation",
   "patches": [
     {
       "file": "tools/patches/muse-vibe-0.2.patch",
