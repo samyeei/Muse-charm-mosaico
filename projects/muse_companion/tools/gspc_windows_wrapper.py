@@ -28,8 +28,8 @@ def _find_gspc() -> Path:
     candidates = [path for path in candidates if path.is_file()]
     if not candidates:
         raise SystemExit("GSPC compiler executable was not found")
-    pinned=[path for path in candidates if path.parent.name=="0.5.0"]
-    if not pinned: raise SystemExit("Pinned GSPC 0.5.0 not found")
+    pinned=[path for path in candidates if path.parent.name=="0.6.1"]
+    if not pinned: raise SystemExit("Pinned GSPC 0.6.1 not found")
     return pinned[0]
 
 

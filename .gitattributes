@@ -1,0 +1,3 @@
+# These inputs are SHA-256 addressed. Preserve exact bytes on Windows/Linux.
+tools/patches/*.patch -text
+projects/muse_companion/tools/character_template/** -text

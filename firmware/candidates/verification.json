@@ -1,0 +1,21 @@
+{
+  "official_product_validation": "PASS",
+  "schema": "esp-iris-system-update/0.2",
+  "release": "2.0.0",
+  "sha256": "e567248d77fbdf54eb22d2bc66255bf6171cb382c661d1d29e7ac49779af9cf3",
+  "size": 7348360,
+  "gsp_runtime": "1.5.1",
+  "gspc": "0.6.1",
+  "recovery_abi": 2,
+  "native_ui_flows": [
+    "idle",
+    "settings-return",
+    "inside-keeps-expanded",
+    "scroll",
+    "mute"
+  ],
+  "native_8_state_character_pack": true,
+  "host_fault_tests_20261023": 11,
+  "hardware_validated": false,
+  "application_host_tests_20261023": 18
+}

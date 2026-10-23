@@ -15,7 +15,7 @@ python projects/muse_companion/tools/prepare_ui.py --character original
 python submodule/esp-mosaico-utils/mosaico-tools/skills/idf-low-noise-build/scripts/idf_low_noise_build.py --project projects/muse_companion build
 ```
 
-GSP is pinned to 1.4.0; component resolution needs network access. On Windows, use the configured IDF tools environment. The retained factory Recovery slot is smaller than the application: the application installs into ota_0, not factory. Do not resize Recovery to silence a warning.
+This 2.0 candidate pins GSP 1.5.1 and gspc 0.6.1; component resolution needs network access. On Windows, use the configured IDF tools environment. The retained `vibe_mode` test partition is smaller than the application: the application installs into `main_app` (OTA 0). Do not resize Vibe Mode to silence a warning. See [migration status](V2_MIGRATION_CN.md) before installing anything.
 
 Preview after component resolution:
 

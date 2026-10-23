@@ -3,5 +3,8 @@
 # CONFIG_ESP_IRIS_OTA is not set
 CONFIG_ESP_IRIS_USB_PRODUCT="ESP-Iris Mosaico muse_companion"
 CONFIG_ESP_IRIS_HEALTH_TIMEOUT_MS=45000
-# Three retained-Recovery methods plus six character-generation methods.
-CONFIG_ESP_IRIS_MAX_RPC_HANDLERS=12
+# Recovery, generation, provisioning, storage and two LAN bridge methods.
+CONFIG_ESP_IRIS_MAX_RPC_HANDLERS=16
+
+# Iris 0.2 separates control and data CDC interfaces.
+CONFIG_TINYUSB_CDC_COUNT=2

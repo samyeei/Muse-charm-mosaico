@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "companion_runtime.h"
+#include "companion_bridge.h"
 #include "companion_platform.h"
 #include "companion_setup.h"
 #include "companion_tts.h"
 #include "companion_generation.h"
+#include "companion_character_job.h"
+#include "companion_character_storage.h"
 #include "bsp/esp_mosaico.h"
 #include "app.h"
 #include "mosaico_hooks.h"
@@ -25,6 +28,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include <ctype.h>
 enum { AUDIO_RATE=16000, AUDIO_FRAMES=256, AUDIO_QUEUE_DEPTH=48,
     CONTROL_QUEUE_DEPTH=12, MESSAGE_QUEUE_DEPTH=4, WORKER_STACK=8192 };
 bool companion_platform_setup(const char **ssid,const char **password)
@@ -41,7 +46,12 @@ typedef struct {uint32_t generation;int16_t pcm[AUDIO_FRAMES];} audio_t;
 struct runtime_t {
     QueueHandle_t control,messages,audio;
     companion_tts_handle_t tts;
+    companion_bridge_handle_t bridge;
+    bool remote,bridge_attempted;
     companion_generation_handle_t generator;
+    companion_character_job_handle_t character_job;
+    companion_character_job_event_t character_notice_pending;
+    character_command_t discarded_control;
     esp_codec_dev_handle_t mic,spk;
     button_handle_t buttons[BSP_BUTTON_NUM];
     atomic_uint generation;
@@ -49,12 +59,13 @@ struct runtime_t {
     command_t command;
     companion_message_t message;
     audio_t captured;
-    char event_text[128],reply[COMP_REPLY_CAP];
+    char event_text[128],reply[COMP_REPLY_CAP],incoming[COMP_REPLY_CAP],character_query[96];
     uint32_t recorded_frames;
+    unsigned character_progress;
     unsigned volume,brightness,last_brightness,language,sleep_seconds,speech_rate,page_seconds;
     int64_t phase_started_us;
     uint32_t ui_ms;
-    bool active,waiting,sntp,imu_ready,battery_ready,accel_valid,generating;
+    bool active,waiting,sntp,imu_ready,battery_ready,accel_valid,generating,querying;
     float x,y,z;
     int battery;
 };
@@ -115,11 +126,16 @@ static void drain_audio(struct runtime_t *r)
 static void command(struct runtime_t *r)
 {
     command_t *c=&r->command;
+    if(c->effects&(COMP_EFFECT_CANCEL|COMP_EFFECT_BEGIN)){
+        companion_bridge_interrupt(r->bridge);
+        if(r->remote){muse_hatch_turn_cancel();companion_bridge_finish(r->bridge,NULL,"local_interruption");r->remote=false;}
+    }
     r->volume=c->volume;r->brightness=c->brightness;
     r->language=c->language;r->sleep_seconds=c->sleep_seconds;
     r->speech_rate=c->speech_rate;r->page_seconds=c->page_seconds;
     muse_companion_language(r->language);
     if(c->effects&COMP_EFFECT_CANCEL){
+        if(r->querying){companion_character_job_query_finished(r->character_job);r->querying=false;}
         if(r->generating){companion_generation_finish(r->generator,"interrupted by AI key");r->generating=false;}
         muse_hatch_turn_cancel();r->active=false;r->waiting=false;r->phase_started_us=esp_timer_get_time();
     }
@@ -150,12 +166,91 @@ static void command(struct runtime_t *r)
             publish(r,COMP_MSG_ERROR,c->generation,"无法开始朗读，请重试",false);
     }
 }
+static void character_notice(struct runtime_t *r,companion_character_job_event_t event)
+{
+    if(event!=CHARACTER_JOB_NONE&&event!=CHARACTER_JOB_STARTED)r->character_notice_pending=event;
+    if(r->remote||r->active||r->waiting||r->querying||r->generating||atomic_load(&r->key)||
+        atomic_load(&r->wants_record)||!companion_tts_idle(r->tts))return;
+    event=r->character_notice_pending;r->character_notice_pending=CHARACTER_JOB_NONE;
+    const char *text=NULL;
+    if(event==CHARACTER_JOB_READY_HELD)text=r->language?
+        "Character pack is ready. Installation is not enabled in this development firmware.":
+        "角色包已就绪，当前开发固件尚未开放安装。";
+    else if(event==CHARACTER_JOB_DOWNLOADED)text=r->language?
+        "Character pack verified. Preparing to apply it; please wait.":
+        "角色包已通过校验，正在准备换装，请等待。";
+    else if(event==CHARACTER_JOB_FAILED)text=r->language?
+        "Character task failed. No successful change has been confirmed.":"换装任务失败，尚未确认完成换装。";
+    else if(event==CHARACTER_JOB_TIMEOUT)text=r->language?
+        "Character task timed out. You can continue using the device.":"等待换装超时，可以继续正常使用。";
+    else if(event==CHARACTER_JOB_REJECTED)text=r->language?
+        "Character instruction was rejected. Your current character is unchanged.":"换装指令未被接受，当前角色未更换。";
+    else if(event==CHARACTER_JOB_RESTORE_DISABLED)text=r->language?
+        "Initial character restore is not enabled in this development firmware. Your current character is unchanged.":
+        "当前尚未开放换装，当前角色未更换。";
+    else if(event==CHARACTER_JOB_RESTORE_HANDOFF)text=r->language?
+        "Preparing to restore the initial character. Please wait.":
+        "正在换装，请等待。";
+    else if(event==CHARACTER_JOB_RESTORE_FAILED)text=r->language?
+        "Initial character restore did not complete. No successful restoration has been confirmed.":
+        "换装失败，请重试。";
+    if(text){
+        snprintf(r->reply,sizeof(r->reply),"%s",text);
+        publish(r,COMP_MSG_REPLY,r->command.generation,r->reply,false);
+    }
+}
+static bool character_reply(struct runtime_t *r,bool from_query)
+{
+    companion_character_job_event_t event=CHARACTER_JOB_NONE;
+    character_command_kind_t kind=r->character_job?companion_character_job_reply(r->character_job,
+        r->incoming,(uint64_t)(esp_timer_get_time()/1000),(uint64_t)time(NULL),&event):
+        companion_character_extract(r->incoming,&r->discarded_control);
+    if(!r->character_job&&kind!=CHARACTER_NONE)event=CHARACTER_JOB_REJECTED;
+    character_notice(r,event);
+    /* Preserve ordinary prose around controls; control-only replies must not
+     * replace the previous user reply or enter the TTS retry buffer. */
+    const char *p=r->incoming;while(*p&&isspace((unsigned char)*p))++p;
+    return *p && (!from_query || kind!=CHARACTER_NONE);
+}
+static esp_err_t restore_start_adapter(void *context,const char *job,uint64_t *token)
+{(void)context;return companion_character_storage_restore_start(job,token);}
+static esp_err_t restore_poll_adapter(void *context,uint64_t token,bool *finished,esp_err_t *result)
+{(void)context;return companion_character_storage_restore_poll(token,finished,result);}
 static void voice(void *ctx)
 {
     struct runtime_t *r=ctx;
+    /* A persisted job may query before the first UI action. Honor saved mute,
+     * language and speech settings for any ordinary prose around its status. */
+    r->speech_rate=100;
+    nvs_handle_t prefs;
+    if(nvs_open("companion",NVS_READONLY,&prefs)==ESP_OK){
+        uint8_t value;
+        if(nvs_get_u8(prefs,"muted",&value)==ESP_OK)atomic_store(&r->muted,value!=0);
+        if(nvs_get_u8(prefs,"language",&value)==ESP_OK)r->language=value!=0;
+        if(nvs_get_u8(prefs,"volume",&value)==ESP_OK&&value<=100)r->volume=value;
+        if(nvs_get_u8(prefs,"speech_rate",&value)==ESP_OK&&value>=75&&value<=150)r->speech_rate=value;
+        nvs_close(prefs);
+    }
+    muse_companion_language(r->language);
     while(!muse_port_initialized())vTaskDelay(pdMS_TO_TICKS(50));
     muse_hatch_start();
+    const companion_character_job_config_t job_config={.load=companion_character_job_load,.save=companion_character_job_save,
+        .download_start=companion_character_storage_download_start,.download_poll=companion_character_storage_download_poll,
+        .restore_start=restore_start_adapter,.restore_poll=restore_poll_adapter};
+    esp_err_t job_error=companion_character_job_create(&job_config,(uint64_t)(esp_timer_get_time()/1000),
+        (uint64_t)time(NULL),&r->character_job);
+    if(job_error!=ESP_OK)ESP_LOGE("companion","character job unavailable: %s",esp_err_to_name(job_error));
     for(;;){
+        /* SDK initialization is signalled before lwIP's mailbox exists.
+         * Wait for a real STA connection before opening any listening socket.
+         * Generate the persisted key while the radio supplies RNG entropy. */
+        if(!r->bridge_attempted&&wifi_mgr_is_connected()){
+            r->bridge_attempted=true;
+            esp_err_t bridge_error=companion_bridge_create(&r->bridge);
+            if(bridge_error==ESP_OK)bridge_error=companion_bridge_start(r->bridge);
+            if(bridge_error!=ESP_OK){ESP_LOGE("companion","LAN bridge unavailable: %s",esp_err_to_name(bridge_error));r->bridge=NULL;}
+            else ESP_LOGI("companion","LAN Muse bridge listening on port 4397");
+        }
         if(!r->sntp&&wifi_mgr_is_connected()){
             esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
             esp_sntp_setservername(0,"pool.ntp.org");esp_sntp_init();r->sntp=true;
@@ -166,7 +261,8 @@ static void voice(void *ctx)
         if(r->generating&&companion_generation_cancelled(r->generator)){
             muse_hatch_turn_cancel();companion_generation_finish(r->generator,"cancelled");r->generating=false;
         }
-        if(!r->generating&&!r->active&&!r->waiting&&companion_tts_idle(r->tts)){
+        if(!r->remote&&!r->generating&&!r->querying&&!r->active&&!r->waiting&&
+            !atomic_load(&r->key)&&!atomic_load(&r->wants_record)&&companion_tts_idle(r->tts)){
             const char *prompt=companion_generation_take(r->generator);
             if(prompt){
                 if(muse_companion_text_begin(prompt)){
@@ -175,14 +271,76 @@ static void voice(void *ctx)
                 }else {muse_hatch_turn_cancel();companion_generation_finish(r->generator,"could not send request");}
             }
         }
+        companion_character_job_event_t job_event=companion_character_job_tick(r->character_job,
+            (uint64_t)(esp_timer_get_time()/1000));
+        character_notice(r,job_event);
+        bool character_busy=r->remote||r->generating||r->active||r->waiting||r->querying||
+            atomic_load(&r->key)||atomic_load(&r->recording)||atomic_load(&r->wants_record)||!companion_tts_idle(r->tts);
+        character_notice(r,companion_character_job_download_tick(r->character_job,
+            (uint64_t)(esp_timer_get_time()/1000),character_busy));
+        unsigned progress=companion_character_job_progress(r->character_job);
+        if(progress!=r->character_progress){
+            companion_message_t *notice=calloc(1,sizeof(*notice));
+            if(notice){
+                notice->kind=COMP_MSG_CHARACTER;notice->generation=progress;
+                if(xQueueSend(r->messages,notice,0)==pdTRUE)r->character_progress=progress;
+                free(notice);
+            }
+        }
+        if(companion_character_job_take_query(r->character_job,(uint64_t)(esp_timer_get_time()/1000),
+            character_busy,muse_hatch_ready(),r->character_query,sizeof(r->character_query))){
+            if(muse_companion_text_begin(r->character_query)){
+                r->querying=true;r->phase_started_us=esp_timer_get_time();
+            }else{muse_hatch_turn_cancel();companion_character_job_query_finished(r->character_job);}
+        }
         drain_audio(r);
+        bool local_idle=!r->remote&&!r->generating&&!r->querying&&!r->active&&!r->waiting&&
+            !atomic_load(&r->key)&&!atomic_load(&r->wants_record)&&companion_tts_idle(r->tts);
+        const char *remote_text=companion_bridge_take(r->bridge,muse_hatch_ready(),local_idle);
+        if(remote_text){
+            if(muse_companion_text_begin(remote_text))r->remote=true;
+            else {muse_hatch_turn_cancel();companion_bridge_finish(r->bridge,NULL,"send_failed");}
+        }
+        if(r->remote&&(atomic_load(&r->key)||companion_bridge_cancelled(r->bridge))){
+            if(atomic_load(&r->key))companion_bridge_interrupt(r->bridge);
+            muse_hatch_turn_cancel();companion_bridge_finish(r->bridge,NULL,"cancelled_or_timeout");r->remote=false;
+        }
         if(atomic_exchange(&r->overrun,false)&&(r->active||r->waiting)){
             atomic_store(&r->recording,false);muse_hatch_turn_cancel();r->active=false;r->waiting=false;
             publish(r,COMP_MSG_ERROR,r->command.generation,"录音传输未跟上，请重试",false);
         }
         muse_hatch_ev_t ev=muse_hatch_turn_event(r->event_text,sizeof(r->event_text));
+        if(r->remote){
+            if(ev==MUSE_HATCH_EV_DONE||ev==MUSE_HATCH_EV_ERROR){
+                bool got=ev==MUSE_HATCH_EV_DONE&&muse_companion_reply_copy(r->incoming,sizeof(r->incoming));
+                companion_bridge_finish(r->bridge,got?r->incoming:NULL,got?NULL:"muse_failed");
+                if(!got)muse_hatch_turn_cancel();
+                r->remote=false;
+            }
+            vTaskDelay(pdMS_TO_TICKS(1));continue;
+        }
+        if(r->querying){
+            if(ev==MUSE_HATCH_EV_DONE||ev==MUSE_HATCH_EV_ERROR||
+                esp_timer_get_time()-r->phase_started_us>90000000LL||job_event==CHARACTER_JOB_TIMEOUT||job_event==CHARACTER_JOB_FAILED){
+                bool prose=false;
+                if(ev==MUSE_HATCH_EV_DONE&&muse_companion_reply_copy(r->incoming,sizeof(r->incoming)))
+                    prose=character_reply(r,true);
+                else muse_hatch_turn_cancel();
+                companion_character_job_query_finished(r->character_job);r->querying=false;
+                if(prose){
+                    snprintf(r->reply,sizeof(r->reply),"%s",r->incoming);
+                    bool speaking=!atomic_load(&r->muted);
+                    publish(r,COMP_MSG_REPLY,r->command.generation,r->reply,speaking);
+                    if(speaking&&companion_tts_submit(r->tts,r->command.generation,r->reply,r->volume,r->speech_rate)!=ESP_OK)
+                        publish(r,COMP_MSG_ERROR,r->command.generation,"无法开始朗读，文字已保留",false);
+                }
+            }
+            vTaskDelay(pdMS_TO_TICKS(1));continue;
+        }
         if(r->generating){
             if(ev==MUSE_HATCH_EV_DONE||ev==MUSE_HATCH_EV_ERROR){
+                if(ev==MUSE_HATCH_EV_DONE&&muse_companion_reply_copy(r->incoming,sizeof(r->incoming)))
+                    (void)character_reply(r,false);
                 companion_generation_finish(r->generator,ev==MUSE_HATCH_EV_ERROR?"Muse request failed":NULL);
                 r->generating=false;ESP_LOGI("companion","Muse character generation finished");
             }else if(esp_timer_get_time()-r->phase_started_us>300000000LL){
@@ -196,7 +354,12 @@ static void voice(void *ctx)
             publish(r,COMP_MSG_ERROR,gen,"Muse 对话失败，请检查连接后重试",false);
         }else if(ev==MUSE_HATCH_EV_DONE){
             r->waiting=false;
-            if(muse_companion_reply_copy(r->reply,sizeof(r->reply))){
+            if(muse_companion_reply_copy(r->incoming,sizeof(r->incoming))){
+                if(!character_reply(r,false)){
+                    publish(r,COMP_MSG_DONE,gen,"",false);
+                    vTaskDelay(pdMS_TO_TICKS(1));continue;
+                }
+                snprintf(r->reply,sizeof(r->reply),"%s",r->incoming);
                 ESP_LOGI("companion","reply received: generation=%u bytes=%u",(unsigned)gen,(unsigned)strlen(r->reply));
                 bool speaking=!atomic_load(&r->muted);
                 publish(r,COMP_MSG_REPLY,gen,r->reply,speaking);

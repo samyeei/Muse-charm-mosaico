@@ -24,11 +24,14 @@ if(CMAKE_HOST_WIN32 AND NOT DEFINED ENV{GSPC_EXECUTABLE})
         COMMAND_ERROR_IS_FATAL ANY)
     set(GSPC_EXECUTABLE "${companion_gspc_wrapper}" CACHE FILEPATH "Pinned compiler Windows depfile adapter" FORCE)
 endif()
+set(MOSAICO_GSPC_VERSION "0.6.1")
 include("${MOSAICO_UTILS_ROOT}/mosaico-tools/cmake/gsp_compiler.cmake")
 list(APPEND EXTRA_COMPONENT_DIRS
-    "${MOSAICO_UTILS_ROOT}/esp-mosaico-recovery/components/esp_mosaico_app_recovery"
+    "${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/components/esp_mosaico_nand_store"
+    "${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/components/esp_mosaico_character_journal"
+    "${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/components/esp_mosaico_app_recovery"
     "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_bundle"
     "${MOSAICO_UTILS_ROOT}/mosaico-tools/components/esp_mosaico_gsp_iris")
-include("${MOSAICO_UTILS_ROOT}/esp-mosaico-recovery/cmake/mosaico_idf_project.cmake")
-project(muse_companion VERSION 1.0.0)
+include("${MOSAICO_UTILS_ROOT}/esp-mosaico-vibe-mode/cmake/mosaico_idf_project.cmake")
+project(muse_companion VERSION 2.0.0)
 include("${MOSAICO_UTILS_ROOT}/mosaico-tools/cmake/system_update.cmake")

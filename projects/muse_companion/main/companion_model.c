@@ -70,6 +70,7 @@ unsigned companion_model_action(companion_model_handle_t m,
         m->s.speech_rate=value>=75&&value<=150?value:100; return COMP_EFFECT_PREFS;
     case COMP_PAGE_INTERVAL:
         m->s.page_seconds=value>=3&&value<=15?value:7; return COMP_EFFECT_PREFS;
+    case COMP_PAGE_SET: m->s.page=value; return 0;
     case COMP_PAGE_NEXT: ++m->s.page; return 0;
     case COMP_PAGE_PREV: if(m->s.page) --m->s.page; return 0;
     case COMP_RETRY:

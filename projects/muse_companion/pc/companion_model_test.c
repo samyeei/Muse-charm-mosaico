@@ -43,5 +43,10 @@ int main(void) {
     assert(s->sleep_seconds==15&&s->speech_rate==100&&s->page_seconds==7);
     companion_model_action(m,COMP_PRESS,0);companion_model_snapshot(m,s);assert(!s->asleep&&s->display_brightness==65);
     companion_model_tick(m,100000);companion_model_snapshot(m,s);assert(!s->asleep&&s->mode==COMP_LISTENING);
-    companion_model_delete(m);free(s);puts("PASS: hold/release, cancel, stale replies, speaker mute, dimming, wake, busy sleep suppression");return 0;
+    companion_model_action(m,COMP_RELEASE,0);companion_model_snapshot(m,s);
+    assert(s->mode==COMP_THINKING);old=s->generation;
+    companion_model_done(m,old);companion_model_snapshot(m,s);assert(s->mode==COMP_IDLE&&!s->reply[0]);
+    companion_model_action(m,COMP_PRESS,0);
+    companion_model_done(m,old);companion_model_snapshot(m,s);assert(s->mode==COMP_LISTENING);
+    companion_model_delete(m);free(s);puts("PASS: hold/release, cancel, stale replies, speaker mute, dimming, wake, busy sleep suppression, control-only DONE");return 0;
 }

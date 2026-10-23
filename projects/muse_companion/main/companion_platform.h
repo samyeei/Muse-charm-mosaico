@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 #include "companion_model.h"
-typedef enum { COMP_MSG_REPLY,COMP_MSG_DONE,COMP_MSG_ERROR } companion_message_kind_t;
+#include "companion_character_progress.h"
+typedef enum { COMP_MSG_REPLY,COMP_MSG_DONE,COMP_MSG_ERROR, COMP_MSG_CHARACTER } companion_message_kind_t;
 typedef struct {
     companion_message_kind_t kind;
+    /* CHARACTER carries companion_character_progress_t here; other kinds
+     * carry the conversation generation. Progress never replaces chat/TTS. */
     uint32_t generation;
     bool speaking;
     char text[COMP_REPLY_CAP];

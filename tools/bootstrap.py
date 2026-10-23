@@ -10,4 +10,26 @@ pins=json.loads((root/'DEPENDENCIES.json').read_text())['submodules']
 for name,sha in pins.items():
     result=subprocess.check_output(['git','-C',str(root),'ls-files','-s','--',name],text=True)
     if not result.strip():git('update-index','--add','--cacheinfo',f'160000,{sha},{name}')
-git('submodule','update','--init','--recursive')
+git('-c','core.autocrlf=false','submodule','update','--init','--recursive')
+
+# Muse's persistent character installer is a reviewed patch over a public pin.
+# Never reset a user's dependency checkout or apply the same patch twice.
+import hashlib
+metadata=json.loads((root/'DEPENDENCIES.json').read_text())
+for patch in metadata.get('patches',[]):
+    source=root/patch['file']
+    if hashlib.sha256(source.read_bytes()).hexdigest()!=patch['sha256']:
+        raise SystemExit('Dependency patch hash mismatch: '+patch['file'])
+    checkout=root/patch['submodule']
+    args=['git','-C',str(checkout),'apply']
+    if subprocess.run(args+['--reverse','--check',str(source)],capture_output=True).returncode==0:
+        print('Already applied:',patch['file'])
+        continue
+    subprocess.run(args+['--check',str(source)],check=True)
+    subprocess.run(args+[str(source)],check=True)
+
+# The Windows compiler adapter is selected before IDF resolves components.
+# Fetch the pinned official compiler now so a clean computer can build too.
+if metadata.get('gspc'):
+    subprocess.run([sys.executable,str(root/'submodule/esp-mosaico-utils/shared/gsp/fetch.py'),
+                    '--tool-version',metadata['gspc']],check=True)

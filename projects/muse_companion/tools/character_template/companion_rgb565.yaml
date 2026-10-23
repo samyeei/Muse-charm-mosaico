@@ -1,0 +1,7 @@
+# Application-owned profile; eight checked 128x128 animation states.
+name: muse_companion_rgb565
+pixel_format: rgb565
+resource_alignment: 64
+stride_alignment: 64
+animation_max_players: 8
+animation_frame_budget_bytes: 2097152

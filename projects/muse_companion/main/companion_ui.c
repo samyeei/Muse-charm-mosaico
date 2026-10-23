@@ -2,14 +2,18 @@
 #include "companion_ui.h"
 #include "companion_model.h"
 #include "companion_platform.h"
-#include "character_profile.h"
 #include "bundle_gsp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 enum { UI_TICK_MS=100, PAGE_BYTES=96, LINE_CHARACTERS=18, PAGE_CHARACTERS=36,
        CHARACTER_X=90, CHARACTER_Y=75, CHARACTER_POSES=8,
-       MAX_PAGE_SECONDS=15 };
+       MAX_PAGE_SECONDS=15, EXPANDED_LINES=8, DIALOGUE_TOP=190,
+       TOP_SWIPE_START=48, TOP_SWIPE_DISTANCE=60, TAP_DRIFT=18,
+       TEXT_LINE_HEIGHT=26 };
+enum { STARTUP_QUEUE_FENCE_MS=5000 };
+enum { POINTER_NONE, POINTER_SETTINGS, POINTER_DIALOGUE, POINTER_WAKE,
+       POINTER_BACK, POINTER_SCROLL };
 struct companion_ui_t {
     esp_gsp_handle_t ui;
     companion_model_handle_t model;
@@ -22,8 +26,18 @@ struct companion_ui_t {
     unsigned greeting_ticks, pet_ticks;
     int motion_pose;
     bool auto_pages;
+    bool animated_character;
+    /* Main task owns setup until the initial command fence completes. Timers
+     * and input callbacks are registered only after that handoff. */
+    bool initializing;
     unsigned reply_pages, page_elapsed_ms;
-    char page_hint[96];
+    char page_hint[96], dialogue[640], wrap_source[640];
+    char reading_text[EXPANDED_LINES][LINE_CHARACTERS*4+1];
+    bool expanded, expanded_supported, pointer_down, pointer_owned, suppress_tap;
+    int pointer_x, pointer_y, pointer_last_x, pointer_last_y;
+    unsigned character_progress, pointer_action;
+    unsigned scroll_line;
+    int scroll_delta;
     esp_gsp_err_t last_error;
 };
 static esp_gsp_err_t (*const pose[])(esp_gsp_handle_t,bool)={
@@ -45,38 +59,81 @@ static unsigned sleep_index(unsigned seconds)
         if(sleep_options[i]==seconds)return i;
     return 2;
 }
-static void checked(companion_ui_handle_t s,esp_gsp_err_t err)
+static void checked_result(companion_ui_handle_t s,esp_gsp_err_t err)
 { if(err!=ESP_GSP_OK){ s->last_error=err;fprintf(stderr,"companion UI error=%d\n",(int)err); } }
+/* Startup sends a burst of idempotent property updates from outside the render
+ * task. If queue admission times out, fence the accepted commands and retry
+ * that exact setter once. Runtime callbacks never call a blocking fence. */
+#define checked(s,call) do { \
+    esp_gsp_err_t checked_error=(call); \
+    if((s)->initializing&&checked_error==ESP_GSP_ERR_TIMEOUT){ \
+        esp_gsp_err_t fence_error=esp_gsp_flush((s)->ui,STARTUP_QUEUE_FENCE_MS); \
+        checked_error=fence_error==ESP_GSP_OK?(call):fence_error; \
+    } \
+    checked_result((s),checked_error); \
+} while(0)
 /* Split UTF-8 by complete characters, fitting the two visible caption lines.
  * This retains the full reply, and pages never begin inside a UTF-8 codepoint. */
-static size_t page_bounds(const char *text,unsigned page,size_t *offset)
+static size_t page_bounds(const char *text,unsigned page,size_t *offset,bool expanded)
 {
     size_t start=0,len=strlen(text);
     for(unsigned i=0;;++i) {
         size_t end=start;unsigned characters=0;
-        while(end<len && characters<PAGE_CHARACTERS){
+        while(end<len && characters<(expanded?LINE_CHARACTERS*EXPANDED_LINES:PAGE_CHARACTERS)){
             unsigned char c=(unsigned char)text[end];
             size_t n=c<0x80?1:(c&0xe0)==0xc0?2:(c&0xf0)==0xe0?3:4;
-            if(end+n>len || end+n-start>PAGE_BYTES)break;
+            if(end+n>len || end+n-start>(expanded?EXPANDED_LINES*LINE_CHARACTERS*4:PAGE_BYTES))break;
             end+=n;++characters;
         }
         if(i==page || end==len) { *offset=start;return end-start; }
         start=end;
     }
 }
-static unsigned page_count(const char *text)
+static unsigned page_count(const char *text,bool expanded)
 {
     unsigned page=0;size_t offset,n,len=strlen(text);
     do {
-        n=page_bounds(text,page,&offset);
+        n=page_bounds(text,page,&offset,expanded);
         if(!n)break; /* A truncated UTF-8 tail must not stall counting. */
         ++page;
     } while(offset+n<len);
     return page?page:1;
 }
-static void wrap_caption(char *text,size_t cap)
+/* A bounded window into the complete model reply, without copying or truncating
+ * the full text. Explicit newlines are retained; offsets stay on UTF-8 boundaries. */
+static size_t reading_line(const char *text,unsigned row,size_t *offset)
 {
-    char source[128];snprintf(source,sizeof(source),"%s",text);
+    size_t start=0,len=strlen(text);
+    for(unsigned line=0;;++line){
+        size_t end=start;unsigned columns=0;
+        while(end<len&&columns<LINE_CHARACTERS){
+            unsigned char c=(unsigned char)text[end];
+            if(c=='\n'||c=='\r')break;
+            size_t bytes=c<0x80?1:(c&0xe0)==0xc0?2:(c&0xf0)==0xe0?3:4;
+            if(end+bytes>len)break;
+            end+=bytes;++columns;
+        }
+        if(line==row||start==len){*offset=start;return end-start;}
+        if(end<len&&text[end]=='\r')++end;
+        if(end<len&&text[end]=='\n')++end;
+        if(end==start){*offset=len;return 0;}
+        start=end;
+    }
+}
+static unsigned reading_lines(const char *text)
+{
+    unsigned count=0;size_t offset=0,n=0,len=strlen(text);
+    do{n=reading_line(text,count,&offset);++count;}while(offset+n<len&&count<=len);
+    return count;
+}
+static unsigned reading_row_at(const char *text,size_t anchor)
+{
+    unsigned row=0;size_t offset,n;
+    for(;;++row){n=reading_line(text,row,&offset);if(offset+n>anchor||offset>=strlen(text))return row;}
+}
+static void wrap_caption(companion_ui_handle_t s,char *text,size_t cap)
+{
+    char *source=s->wrap_source;snprintf(source,sizeof(s->wrap_source),"%s",text);
     size_t out=0;unsigned columns=0;
     for(size_t i=0;source[i]&&out+5<cap;){
         unsigned char c=(unsigned char)source[i];
@@ -110,6 +167,7 @@ static const char *english_error(const char *text)
         if(!strcmp(text,errors[i].zh))return errors[i].en;
     return "Connection failed. Try again";
 }
+static void position(companion_ui_handle_t s,unsigned key,int x,int y);
 static void render(companion_ui_handle_t s)
 {
     companion_model_snapshot(s->model,&s->snapshot);
@@ -157,7 +215,7 @@ static void render(companion_ui_handle_t s)
         checked(s,gsp_companion_settings_brightness_text_set_text(s->ui,text));
         checked(s,gsp_companion_settings_title_set_text(s->ui,en?"Settings":"伙伴设置"));
         checked(s,gsp_companion_settings_phone_setup_set_text(s->ui,en?"Phone setup":"手机配置"));
-        checked(s,gsp_companion_settings_back_label_set_text(s->ui,en?"Back":"返回"));
+        checked(s,gsp_companion_settings_back_label_set_text(s->ui,""));
         checked(s,gsp_companion_settings_language_text_set_text(s->ui,en?"Language":"语言"));
         checked(s,gsp_companion_settings_language_value_set_text(s->ui,en?"English":"中文"));
         checked(s,gsp_companion_settings_sleep_set_value(s->ui,sleep_index(m->sleep_seconds)));
@@ -179,12 +237,12 @@ static void render(companion_ui_handle_t s)
     for(unsigned i=0;i<6;++i) checked(s,pose[i](s->ui,!happy&&!greeting&&m->mode==(companion_mode_t)i));
     checked(s,gsp_companion_happy_set_visible(s->ui,happy));
     checked(s,gsp_companion_boot_set_visible(s->ui,greeting));
-    checked(s,gsp_companion_heart_0_set_visible(s->ui,happy&&!COMPANION_ANIMATED_CHARACTER));
-    checked(s,gsp_companion_heart_1_set_visible(s->ui,happy&&!COMPANION_ANIMATED_CHARACTER));
+    checked(s,gsp_companion_heart_0_set_visible(s->ui,happy&&!s->animated_character));
+    checked(s,gsp_companion_heart_1_set_visible(s->ui,happy&&!s->animated_character));
     for(unsigned i=0;i<3;++i){
         static esp_gsp_err_t (*const thought[])(esp_gsp_handle_t,bool)={
             gsp_companion_thought_0_set_visible,gsp_companion_thought_1_set_visible,gsp_companion_thought_2_set_visible};
-        checked(s,thought[i](s->ui,!COMPANION_ANIMATED_CHARACTER&&m->mode==COMP_THINKING));
+        checked(s,thought[i](s->ui,!s->animated_character&&m->mode==COMP_THINKING));
     }
     snprintf(text,sizeof(text),"%s",m->paired?(m->online?(en?"Muse online":"Muse 在线"):(en?"Connecting":"正在连接")):(en?"Pair device":"等待配对"));
     checked(s,gsp_companion_connection_set_text(s->ui,text));
@@ -192,6 +250,8 @@ static void render(companion_ui_handle_t s)
     else snprintf(text,sizeof(text),"--");
     checked(s,gsp_companion_battery_set_text(s->ui,text));
     checked(s,gsp_companion_battery_fill_set_value(s->ui,m->battery<0?0:(m->battery>100?100:m->battery)));
+    checked(s,esp_gsp_component_set_visible(s->ui,GSP_COMPANION_OBJ_KEY_SETTINGS_OPEN,false));
+    checked(s,gsp_companion_icon_gear_set_visible(s->ui,false));
     checked(s,gsp_companion_icon_speaker_set_visible(s->ui,!m->muted));
     checked(s,gsp_companion_icon_muted_set_visible(s->ui,m->muted));
     const char *caption=en?"Hi! Want to chat?":"我在，想聊点什么？",*hint=en?"Hold the top AI key to talk":"按住顶部 AI 键说话";
@@ -199,29 +259,56 @@ static void render(companion_ui_handle_t s)
     else if(m->mode==COMP_THINKING) {caption=(en?"Thinking...":"让我想一想…");hint=(en?"Hold AI to ask again":"按住 AI 键可以重新提问");}
     else if(m->mode==COMP_SLEEPY) {caption=(en?"Taking a little nap...":"我先眯一会儿…");hint=(en?"Pick up, touch or press to wake":"拿起、触摸或按键唤醒");}
     else if(m->mode==COMP_ERROR) {caption=en?english_error(m->error):m->error;hint=(en?"Hold AI to try again":"按住 AI 键重试");}
+    if(s->character_progress&&m->mode==COMP_IDLE){
+        caption=en?"Changing character...":"正在换装，请等待…";
+        hint=s->character_progress==COMP_CHARACTER_BUILDING?(en?"Creating animation...":"角色制作中，完成后自动下载"):
+            s->character_progress==COMP_CHARACTER_DOWNLOADING?(en?"Downloading and checking...":"下载与校验中，请保持通电"):
+            (en?"Applying character...":"正在应用角色，请保持通电");
+    }
     bool reply=m->reply[0]&&m->mode!=COMP_LISTENING&&m->mode!=COMP_THINKING&&m->mode!=COMP_ERROR;
-    bool next_page=false;
-    if(reply) {size_t offset;size_t n=page_bounds(m->reply,m->page,&offset);
-        next_page=s->reply_pages?m->page+1<s->reply_pages:offset+n<strlen(m->reply);
-        memcpy(text,m->reply+offset,n);text[n]='\0';wrap_caption(text,sizeof(text));caption=text;
+    if(reply&&!s->expanded) {size_t offset;size_t n=page_bounds(m->reply,m->page,&offset,false);
+        memcpy(s->dialogue,m->reply+offset,n);s->dialogue[n]='\0';wrap_caption(s,s->dialogue,sizeof(s->dialogue));caption=s->dialogue;
         hint=m->muted?(en?"Muted / captions on":"已静音 · 字幕保留"):(en?"Hold AI to interrupt":"按住 AI 键可以打断");}
-    if(reply&&s->reply_pages>1){
+    if(reply&&!s->expanded&&s->reply_pages>1){
         snprintf(s->page_hint,sizeof(s->page_hint),en?"%s / %u/%u":"%s · %u/%u 页",
             s->auto_pages?(en?"Auto":"自动翻页"):(en?"Manual":"手动翻页"),m->page+1,s->reply_pages);
         hint=m->asleep||m->mode==COMP_SLEEPY?(en?"Touch to keep reading":"轻触屏幕继续阅读"):s->page_hint;
     }
-    checked(s,gsp_companion_reply_card_set_visible(s->ui,reply));
+    checked(s,gsp_companion_reply_card_set_visible(s->ui,reply&&!s->expanded));
     checked(s,gsp_companion_caption_set_text(s->ui,reply?"":caption));
-    char *second=reply?strchr(text,'\n'):NULL;
+    char *second=reply?strchr(s->dialogue,'\n'):NULL;
     if(second){*second='\0';++second;}
-    checked(s,gsp_companion_reply_text_set_text(s->ui,reply?caption:""));
-    checked(s,gsp_companion_reply_text_2_set_text(s->ui,second?second:""));
+    checked(s,gsp_companion_reply_text_set_text(s->ui,reply&&!s->expanded?caption:""));
+    checked(s,gsp_companion_reply_text_2_set_text(s->ui,second&&!s->expanded?second:""));
+    if(s->expanded_supported){
+        checked(s,gsp_companion_reply_expanded_card_set_visible(s->ui,reply&&s->expanded));
+        static const unsigned rows[]={GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_0,GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_1,
+            GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_2,GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_3,
+            GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_4,GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_5,
+            GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_6,GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_7};
+        for(unsigned i=0;i<EXPANDED_LINES;++i){
+            size_t offset=0,n=reply&&s->expanded?reading_line(m->reply,s->scroll_line+i,&offset):0;
+            memcpy(s->reading_text[i],m->reply+offset,n);s->reading_text[i][n]='\0';
+            checked(s,esp_gsp_component_set_visible(s->ui,rows[i],reply&&s->expanded));
+            checked(s,esp_gsp_component_set_text(s->ui,rows[i],s->reading_text[i]));
+        }
+    }
+    if(reply&&s->expanded){
+        unsigned total=reading_lines(m->reply);
+        snprintf(s->page_hint,sizeof(s->page_hint),en?"Swipe to read / %u-%u of %u":"上下滑动阅读 · %u-%u/%u 行",
+            s->scroll_line+1,s->scroll_line+EXPANDED_LINES<total?s->scroll_line+EXPANDED_LINES:total,total);
+        hint=s->page_hint;
+    }
+    if(s->character_progress&&m->mode!=COMP_LISTENING&&m->mode!=COMP_THINKING)
+        hint=s->character_progress==COMP_CHARACTER_BUILDING?(en?"Creating character...":"角色制作中，请等待"):
+             s->character_progress==COMP_CHARACTER_DOWNLOADING?(en?"Downloading / checking...":"下载与校验中，请等待"):
+             (en?"Applying / keep powered":"应用中，请保持通电");
     checked(s,gsp_companion_hint_set_text(s->ui,hint));
     checked(s,gsp_companion_talk_hint_set_text(s->ui,hint));
     checked(s,gsp_companion_cancel_set_text(s->ui,en?"Cancel":"取消"));
     checked(s,esp_gsp_component_set_visible(s->ui,GSP_COMPANION_OBJ_KEY_CANCEL,m->mode==COMP_LISTENING||m->mode==COMP_THINKING));
-    checked(s,gsp_companion_page_prev_set_visible(s->ui,reply&&m->page>0));
-    checked(s,gsp_companion_page_next_set_visible(s->ui,reply&&next_page));
+    checked(s,gsp_companion_page_prev_set_visible(s->ui,false));
+    checked(s,gsp_companion_page_next_set_visible(s->ui,false));
     checked(s,gsp_companion_retry_set_text(s->ui,en?"Retry speech":"重试朗读"));
     checked(s,esp_gsp_component_set_visible(s->ui,GSP_COMPANION_OBJ_KEY_RETRY,m->mode==COMP_ERROR&&m->reply[0]&&!m->muted));
     s->previous=*m;s->rendered=true;
@@ -250,6 +337,72 @@ static void slider(companion_ui_handle_t s,companion_action_t a,unsigned value,b
     if(!persist&&value==previous)action(s,COMP_WAKE,0);
     else action_apply(s,a,value,persist);
 }
+static void toggle_dialogue(companion_ui_handle_t s)
+{
+    size_t offset;
+    if(s->expanded)reading_line(s->snapshot.reply,s->scroll_line,&offset);
+    else{page_bounds(s->snapshot.reply,s->snapshot.page,&offset,false);
+        s->scroll_line=reading_row_at(s->snapshot.reply,offset);
+        unsigned total=reading_lines(s->snapshot.reply),limit=total>EXPANDED_LINES?total-EXPANDED_LINES:0;
+        if(s->scroll_line>limit)s->scroll_line=limit;}
+    s->expanded=!s->expanded;s->reply_pages=page_count(s->snapshot.reply,false);
+    unsigned page=0;size_t start,n;
+    while(page+1<s->reply_pages){
+        n=page_bounds(s->snapshot.reply,page,&start,false);
+        if(offset<start+n)break;
+        ++page;
+    }
+    s->auto_pages=false;
+    companion_model_action(s->model,COMP_PAGE_SET,page);
+    s->page_elapsed_ms=0;s->rendered=false;action(s,COMP_WAKE,0);
+}
+static void pointer(esp_gsp_handle_t ui,int32_t x,int32_t y,bool pressed,void *ctx)
+{
+    (void)ui;companion_ui_handle_t s=ctx;
+    if(s->scene_pending||companion_platform_setup(NULL,NULL))return;
+    if(pressed&&!s->pointer_down){
+        companion_model_snapshot(s->model,&s->snapshot);
+        s->pointer_down=true;s->pointer_x=x;s->pointer_y=y;s->suppress_tap=s->expanded&&!s->current_settings;
+        s->pointer_last_x=x;s->pointer_last_y=y;
+        s->pointer_owned=s->snapshot.asleep;
+        if(s->snapshot.asleep){s->suppress_tap=true;s->pointer_action=POINTER_WAKE;}
+    }
+    if(pressed){s->pointer_last_x=x;s->pointer_last_y=y;return;}
+    if(!s->pointer_down)return;
+    s->pointer_down=false;
+    fprintf(stderr,"UI pointer release start=%d,%d end=%d,%d expanded=%d owned=%d mode=%u\n",s->pointer_x,s->pointer_y,s->pointer_last_x,s->pointer_last_y,s->expanded,s->pointer_owned,(unsigned)s->snapshot.mode);
+    if(s->pointer_owned)return;
+    int dx=s->pointer_last_x-s->pointer_x,dy=s->pointer_last_y-s->pointer_y;
+    if(s->current_settings){
+        if(dy<=-TOP_SWIPE_DISTANCE&&abs(dx)<=40){
+            s->suppress_tap=true;s->pointer_action=POINTER_BACK;
+        }
+        return;
+    }
+    if(s->pointer_y<=TOP_SWIPE_START&&dy>=TOP_SWIPE_DISTANCE&&abs(dx)<=40){
+        s->suppress_tap=true;s->pointer_action=POINTER_SETTINGS;return;
+    }
+    bool reply=s->snapshot.reply[0]&&s->snapshot.mode!=COMP_LISTENING&&
+        s->snapshot.mode!=COMP_THINKING&&s->snapshot.mode!=COMP_ERROR;
+    if(reply&&s->expanded&&s->pointer_y>=DIALOGUE_TOP&&s->pointer_y<435&&
+        abs(dy)>TAP_DRIFT&&abs(dy)>abs(dx)){
+        s->scroll_delta=-dy/TEXT_LINE_HEIGHT;
+        if(!s->scroll_delta)s->scroll_delta=dy<0?1:-1;
+        s->suppress_tap=true;s->pointer_action=POINTER_SCROLL;return;
+    }
+    if(reply&&s->expanded&&abs(dx)<=TAP_DRIFT&&abs(dy)<=TAP_DRIFT){
+        s->suppress_tap=true;
+        if(s->pointer_x<18||s->pointer_x>=462||s->pointer_y<DIALOGUE_TOP||s->pointer_y>=435)
+            s->pointer_action=POINTER_DIALOGUE;
+        else s->pointer_action=POINTER_WAKE;
+        return;
+    }
+    if(s->expanded_supported&&reply&&s->pointer_x>=18&&s->pointer_x<462&&
+        s->pointer_y>=(s->expanded?DIALOGUE_TOP:365)&&s->pointer_y<435&&
+        abs(dx)<=TAP_DRIFT&&abs(dy)<=TAP_DRIFT){
+        s->suppress_tap=true;s->pointer_action=POINTER_DIALOGUE;
+    }
+}
 static int rise(unsigned tick,unsigned period,unsigned pixels)
 {
     unsigned half=period/2,p=tick%period;
@@ -265,7 +418,7 @@ static void position(companion_ui_handle_t s,unsigned key,int x,int y)
 }
 static void character_motion(companion_ui_handle_t s)
 {
-    if(COMPANION_ANIMATED_CHARACTER)return; /* GSP owns GIF playback. */
+    if(s->animated_character)return; /* GSP owns authored frame playback. */
     if(s->scene_pending||s->current_settings||s->snapshot.settings)return;
     static const unsigned keys[CHARACTER_POSES]={GSP_COMPANION_OBJ_KEY_IDLE,GSP_COMPANION_OBJ_KEY_LISTENING,
         GSP_COMPANION_OBJ_KEY_THINKING,GSP_COMPANION_OBJ_KEY_SPEAKING,GSP_COMPANION_OBJ_KEY_SLEEPY,
@@ -312,9 +465,10 @@ static void event(esp_gsp_handle_t ui,const esp_gsp_event_t *e,void *ctx)
         s->scene_pending=false;s->rendered=false;s->motion_pose=-1;render(s);return;
     }
     if(companion_platform_setup(NULL,NULL))return;
+    if(s->suppress_tap)return;
     if(gsp_companion_event_is_pet(e)){
         action(s,COMP_WAKE,0);
-        if(s->snapshot.mode==COMP_IDLE){
+        if(s->snapshot.mode==COMP_IDLE&&!s->snapshot.reply[0]){
             s->pet_ticks=40;s->greeting_ticks=0;s->rendered=false;render(s);
         }
     }
@@ -322,7 +476,7 @@ static void event(esp_gsp_handle_t ui,const esp_gsp_event_t *e,void *ctx)
     else if(gsp_companion_event_is_ai_release(e)) action(s,COMP_RELEASE,0);
     else if(gsp_companion_event_is_mute(e)) action(s,COMP_MUTE,0);
     else if(gsp_companion_event_is_cancel(e)) action(s,COMP_CANCEL,0);
-    else if(gsp_companion_event_is_settings_open(e)) action(s,COMP_SETTINGS,0);
+    else if(gsp_companion_event_is_settings_open(e)) action(s,COMP_WAKE,0);
     else if(gsp_companion_settings_event_is_phone_setup(e)){
         action(s,COMP_WAKE,0);
         if(!companion_platform_setup_request()){
@@ -355,6 +509,20 @@ static void tick(esp_gsp_handle_t ui,void *ctx)
         companion_model_tick(s->model,UI_TICK_MS);
         ++s->tick;render(s);return;
     }
+    if(s->pointer_action){
+        unsigned input=s->pointer_action;s->pointer_action=0;
+        if(input==POINTER_SETTINGS)action(s,COMP_SETTINGS,0);
+        else if(input==POINTER_DIALOGUE)toggle_dialogue(s);
+        else if(input==POINTER_BACK)action(s,COMP_BACK,0);
+        else if(input==POINTER_SCROLL){
+            unsigned total=reading_lines(s->snapshot.reply),limit=total>EXPANDED_LINES?total-EXPANDED_LINES:0;
+            int row=(int)s->scroll_line+s->scroll_delta;
+            s->scroll_line=row<0?0:(unsigned)row>limit?limit:(unsigned)row;
+            s->auto_pages=false;s->rendered=false;action(s,COMP_WAKE,0);
+            fprintf(stderr,"UI reading scroll line=%u total=%u\n",s->scroll_line,total);
+        }
+        else action(s,COMP_WAKE,0);
+    }
     bool online,paired,key,motion;int battery;
     companion_platform_tick(UI_TICK_MS);
     companion_platform_status(&online,&paired,&battery,&key,&motion);
@@ -376,13 +544,19 @@ static void tick(esp_gsp_handle_t ui,void *ctx)
             companion_model_snapshot(s->model,&s->snapshot);
             if(msg->generation==s->snapshot.generation&&s->snapshot.mode!=COMP_LISTENING){
                 companion_model_reply(s->model,msg->generation,msg->text,msg->speaking);
-                s->reply_pages=page_count(msg->text);s->page_elapsed_ms=0;
+                s->scroll_line=0;
+                s->reply_pages=page_count(msg->text,false);s->page_elapsed_ms=0;
                 s->auto_pages=s->reply_pages>1;
             }
+        }
+        else if(msg->kind==COMP_MSG_CHARACTER){
+            s->character_progress=msg->generation;s->rendered=false;
+            companion_model_action(s->model,COMP_WAKE,0);
         }
         else if(msg->kind==COMP_MSG_DONE) companion_model_done(s->model,msg->generation);
         else companion_model_error(s->model,msg->generation,msg->text);
     }
+    if(s->character_progress)companion_model_action(s->model,COMP_WAKE,0);
     companion_model_tick(s->model,UI_TICK_MS);
     companion_model_snapshot(s->model,&s->snapshot);
     if(s->snapshot.mode!=COMP_IDLE||s->snapshot.asleep){
@@ -392,7 +566,7 @@ static void tick(esp_gsp_handle_t ui,void *ctx)
         if(s->pet_ticks&&!--s->pet_ticks)s->rendered=false;
         if(s->greeting_ticks&&!--s->greeting_ticks)s->rendered=false;
     }
-    if(s->auto_pages&&s->snapshot.reply[0]&&!s->scene_pending&&!s->snapshot.settings&&!s->snapshot.asleep&&
+    if(s->auto_pages&&!s->expanded&&s->snapshot.reply[0]&&!s->scene_pending&&!s->snapshot.settings&&!s->snapshot.asleep&&
         (s->snapshot.mode==COMP_IDLE||s->snapshot.mode==COMP_SPEAKING)){
         s->page_elapsed_ms+=UI_TICK_MS;
         if(s->page_elapsed_ms>=s->snapshot.page_seconds*1000){
@@ -424,16 +598,42 @@ esp_gsp_err_t companion_ui_create(esp_gsp_handle_t ui,companion_ui_handle_t *out
     *out=NULL;companion_ui_handle_t s=calloc(1,sizeof(*s));
     if(!s) return ESP_GSP_ERR_NO_MEM;
     s->ui=ui;s->last_brightness=101;s->model=companion_model_create();
+    /* Older initial-role backups predate this optional resource marker. Their
+     * missing key means static plush motion; a present malformed marker fails. */
+    esp_gsp_component_info_t info;
+    esp_gsp_err_t marker=esp_gsp_component_get_info(ui,GSP_COMPANION_OBJ_KEY_CHARACTER_ANIMATED,&info);
+    if(marker!=ESP_GSP_OK&&marker!=ESP_GSP_ERR_NOT_FOUND){
+        companion_model_delete(s->model);free(s);return marker;
+    }
+    if(marker==ESP_GSP_OK){
+        int32_t value=-1;
+        marker=esp_gsp_component_get_value(ui,GSP_COMPANION_OBJ_KEY_CHARACTER_ANIMATED,&value);
+        if(marker!=ESP_GSP_OK||(value!=0&&value!=100)){
+            fprintf(stderr,"Character mode marker error=%d value=%d\n",(int)marker,(int)value);
+            companion_model_delete(s->model);free(s);return ESP_GSP_ERR_INVALID_ARG;
+        }
+        s->animated_character=value==100;
+    }
+    fprintf(stderr,"Character playback: %s (resource marker %s)\n",
+        s->animated_character?"animated":"static",marker==ESP_GSP_OK?"present":"legacy");
+    marker=esp_gsp_component_get_info(ui,GSP_COMPANION_OBJ_KEY_REPLY_EXPANDED_CARD,&info);
+    if(marker!=ESP_GSP_OK&&marker!=ESP_GSP_ERR_NOT_FOUND){companion_model_delete(s->model);free(s);return marker;}
+    s->expanded_supported=marker==ESP_GSP_OK;
     s->greeting_ticks=40;s->motion_pose=-1;
     if(!s->model) {free(s);return ESP_GSP_ERR_NO_MEM;}
     companion_model_snapshot(s->model,&s->snapshot);
     companion_platform_load_prefs(&s->snapshot);
     companion_model_prefs(s->model,s->snapshot.volume,s->snapshot.brightness,s->snapshot.muted);
     companion_model_options(s->model,s->snapshot.language,s->snapshot.sleep_seconds,s->snapshot.speech_rate,s->snapshot.page_seconds);
+    s->initializing=true;
+    render(s);
+    checked_result(s,esp_gsp_flush(ui,STARTUP_QUEUE_FENCE_MS));
+    s->initializing=false;
+    if(s->last_error!=ESP_GSP_OK) {esp_gsp_err_t err=s->last_error;companion_ui_delete(s);return err;}
     checked(s,esp_gsp_on_event(ui,event,s));
+    checked(s,esp_gsp_set_pointer_observer(ui,pointer,s));
     s->timer=esp_gsp_timer_create(ui,UI_TICK_MS,tick,s);
     if(!s->timer) checked(s,ESP_GSP_ERR_NO_MEM);
-    render(s);
     if(s->last_error!=ESP_GSP_OK) {esp_gsp_err_t err=s->last_error;companion_ui_delete(s);return err;}
     *out=s;return ESP_GSP_OK;
 }
@@ -441,6 +641,7 @@ void companion_ui_delete(companion_ui_handle_t s)
 {
     if(!s)return;
     esp_gsp_on_event(s->ui,NULL,NULL);
+    esp_gsp_set_pointer_observer(s->ui,NULL,NULL);
     if(s->timer)esp_gsp_timer_delete(s->ui,s->timer);
     companion_model_delete(s->model);free(s);
 }

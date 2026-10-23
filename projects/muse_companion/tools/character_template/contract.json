@@ -1,0 +1,40 @@
+{
+  "schema": "muse-ui-template/v1",
+  "template_id": "muse-companion-bd2b06c6a30dacae",
+  "compat_version": "muse-ui-v5-gsp1.5.1-gspc0.6.1-bd2b06c6a30dacae",
+  "compiler_version": "gspc 0.6.1",
+  "files": {
+    "assets/character-atlas.png": "4102c8bef51fd8ff80c14c32b1a3c5b56d2406cd5434f2e7252d6199afa0173b",
+    "assets/error.png": "46fdfae8a81b415958f4c569d82949ec2c98ad737e9f884564cc2ed14a12fced",
+    "assets/icon_gear.png": "1334f9793f860711b299b38d98a7f6084d893819bb1ffe12f918cdcbc3fccb10",
+    "assets/icon_heart.png": "0980646fca7b26116503ed648e6f83be9d4b9974e926c6fa96c1c2f5f6ac14c5",
+    "assets/icon_muted.png": "debbb4bea6e590535964e6fc4b5e052afaea9615b8b06544bd2208ae62656e4f",
+    "assets/icon_speaker.png": "da1422f0163e4204dc6e5fa43e35e9b698751e377dfb2d2bde650bb8ef87af2f",
+    "assets/idle.png": "1627f10f89f76f7267f592b30d437b0b7161f3b25eb1b75f686c042b4ff766b9",
+    "assets/listening.png": "2fc30803b45844a14bed51c82574d7bf18b38eb838b8ab62b1e06cc2f1dd529a",
+    "assets/sleepy.png": "eb67280ed735cc75d07b2fc022a21fcc1aa42062e09791c8bf257b3e183a5852",
+    "assets/speaking.png": "196d3053d626e6ef6f648a8dda15dea88749020d61d4a011562c088d79c84e4c",
+    "assets/thinking.png": "fd38123e9c0c79a82d3256dde1a8920de4f0518e4bea586e304362bdc6c17f9b",
+    "companion_rgb565.yaml": "2eb0093253b47cbc0fc666e16b2246aa6c496e57deb4c82bf111f4588eec2e29",
+    "fonts/DejaVuSans-Bold.ttf": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895",
+    "fonts/DejaVuSans.ttf": "690243adfefe0ce154b547db6205794bd30ac4277275179517a90994f4980648",
+    "fonts/LICENSE": "e0b064ffb25f664e43e30a2e38c1cab4e51032feee9b077b34af1c961f8005e9",
+    "fonts/NotoSansSC-Regular.ttf": "8dbd33f3f8dc1bc28a583124490d4c9700040f39d5c1fe0c8a5fb611da8253df",
+    "fonts/OFL.txt": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9",
+    "main.json": "77ddd2d1e4bdfdd39375a1276bb18764d1ae4f8a2f5b4b1d7d982e196324d53f",
+    "settings.json": "c3f742907b111f6ce91d8120b855c340d9932da509122e00145ff0db47191b42"
+  },
+  "partition_bytes": 3145728,
+  "character_mode": {
+    "component": "character_animated",
+    "property": "value",
+    "static": 0,
+    "animated": 100,
+    "legacy_without_marker": "static"
+  },
+  "compatibility_frozen": false,
+  "ui_interface": "dialogue-scroll-v4",
+  "validation_basis": "Candidate: awaiting native runtime and physical device validation",
+  "recovery_abi": 2,
+  "runtime_version": "1.5.1"
+}

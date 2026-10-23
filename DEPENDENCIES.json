@@ -1,10 +1,21 @@
 {
   "idf_commit": "7b9cc1ac79f865983f59bb8ff3ff43eb74ff1dbe",
   "target": "esp32s31",
-  "gsp": "1.4.0",
+  "gsp": "1.5.1",
   "submodules": {
-    "submodule/esp-mosaico-utils": "abd926592bd9a7119e245faf5a56e6ebc78a8369",
-    "submodule/esp-mosaico-bsp": "9d12a91046a1c88bbcb2e3876a0289502eb4bd3b",
+    "submodule/esp-mosaico-utils": "73b4a37df6d7354cff339daf11b0aaa58ef582a2",
+    "submodule/esp-mosaico-bsp": "05e067de0613a0aa3fe2af42e75616804decbf4b",
     "submodule/raylib-lite-engine": "ca3200a6b7f63e2bdea07851e19fdbd3a42eb742"
-  }
+  },
+  "gspc": "0.6.1",
+  "recovery_abi": 2,
+  "recovery_bsp_commit": "05e067de0613a0aa3fe2af42e75616804decbf4b",
+  "release_status": "candidate-awaiting-device-validation",
+  "patches": [
+    {
+      "file": "tools/patches/muse-vibe-0.2.patch",
+      "sha256": "f16c63ad665340ce0d5e5f3f0acef5c432c12ffd8dec30a222fee71ece8ea321",
+      "submodule": "submodule/esp-mosaico-utils"
+    }
+  ]
 }

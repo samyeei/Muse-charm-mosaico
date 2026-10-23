@@ -34,7 +34,7 @@
       "name": "connection",
       "bind": "connection",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "container",
@@ -85,7 +85,7 @@
       "name": "battery",
       "bind": "battery",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "image",
@@ -417,7 +417,7 @@
     {
       "type": "button",
       "parent": -1,
-      "x": 348,
+      "x": 414,
       "y": 58,
       "w": 48,
       "h": 44,
@@ -445,13 +445,14 @@
       "fg_color": "#4E392E",
       "bg_color": "#FFE1D0",
       "radius": 20,
+      "hidden": true,
       "bind": "settings_open",
       "bind_target": "visible"
     },
     {
       "type": "image",
       "parent": -1,
-      "x": 356,
+      "x": 422,
       "y": 64,
       "w": 32,
       "h": 32,
@@ -466,7 +467,7 @@
     {
       "type": "image",
       "parent": -1,
-      "x": 356,
+      "x": 422,
       "y": 64,
       "w": 32,
       "h": 32,
@@ -488,7 +489,7 @@
       "image": "assets/icon_gear.png",
       "fit": "contain",
       "codec": "lossless",
-      "hidden": false,
+      "hidden": true,
       "name": "icon_gear",
       "bind": "icon_gear",
       "bind_target": "visible"
@@ -675,7 +676,7 @@
       "name": "caption",
       "bind": "caption",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "label",
@@ -691,7 +692,7 @@
       "name": "reply_text",
       "bind": "reply_text",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "label",
@@ -707,7 +708,157 @@
       "name": "reply_text_2",
       "bind": "reply_text_2",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "container",
+      "parent": -1,
+      "x": 18,
+      "y": 190,
+      "w": 444,
+      "h": 245,
+      "bg_color": "#FFE1D0",
+      "radius": 22,
+      "hidden": true,
+      "name": "reply_expanded_card",
+      "bind": "reply_expanded_card",
+      "bind_target": "visible"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 200,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_0",
+      "bind": "reply_expanded_0",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 226,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_1",
+      "bind": "reply_expanded_1",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 252,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_2",
+      "bind": "reply_expanded_2",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 278,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_3",
+      "bind": "reply_expanded_3",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 304,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_4",
+      "bind": "reply_expanded_4",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 330,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_5",
+      "bind": "reply_expanded_5",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 356,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_6",
+      "bind": "reply_expanded_6",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "label",
+      "parent": -1,
+      "x": 52,
+      "y": 382,
+      "w": 376,
+      "h": 26,
+      "text": "",
+      "font_size": 20,
+      "text_align": "left",
+      "fg_color": "#4E392E",
+      "hidden": true,
+      "name": "reply_expanded_7",
+      "bind": "reply_expanded_7",
+      "bind_target": "text",
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "label",
@@ -723,7 +874,7 @@
       "name": "hint",
       "bind": "hint",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "button",
@@ -742,13 +893,13 @@
       "hidden": true,
       "bind": "cancel",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "button",
       "parent": -1,
       "x": 20,
-      "y": 318,
+      "y": 440,
       "w": 42,
       "h": 36,
       "text": "‹",
@@ -766,7 +917,7 @@
       "type": "button",
       "parent": -1,
       "x": 418,
-      "y": 318,
+      "y": 440,
       "w": 42,
       "h": 36,
       "text": "›",
@@ -797,7 +948,7 @@
       "hidden": true,
       "bind": "retry",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
     },
     {
       "type": "button",
@@ -838,7 +989,23 @@
       "name": "talk_hint",
       "bind": "talk_hint",
       "bind_target": "text",
-      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、一上中么亮什仍以伙会传伴住作保停儿先到动发取可后听和唤回在失始字存密对尚就屏已幕度开录待忙想我或手打拿按接提摸播操收放文断新无时有朗未本机松查检次止正没法消点热熄留直眯码秒稍等答繁线络继绪续网置翻聊自触言让设试话语说请读败起超跟轻输返连送速部配醒重量键问阅需静音页顶首，？"
+      "font_charset": "\n !\"#%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~·…、。一上下与中么亮什仍令以件任伙会传伴住作使保停儿先准到制前务动包发取受可后听和唤回固在备失始字存安完密对尚就屏已常幕应度开当录待忙想成我或手打拿持指按换接提摸播操收放文断新无时更有朗未本机松查校检次止正没法消滑点热熄用电留直眯码确秒稍等答繁线络继绪续网置翻聊自色行被装角触言认让设试话语说请读败起超跟轻载输过连送通速部配醒重量键问阅需静音页顶首验，？"
+    },
+    {
+      "type": "progress",
+      "parent": -1,
+      "x": 0,
+      "y": 0,
+      "w": 1,
+      "h": 1,
+      "min": 0,
+      "max": 100,
+      "value": 0,
+      "bg_color": "#000000",
+      "fg_color": "#000000",
+      "name": "character_animated",
+      "bind": "character_animated",
+      "bind_target": "value"
     }
   ]
 }

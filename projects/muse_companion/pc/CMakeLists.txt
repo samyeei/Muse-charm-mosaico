@@ -26,9 +26,13 @@ gsp_add_backend(companion_backend
     INCLUDE_DIRECTORIES ../main
     SCENES ../ui/main.json ../ui/settings.json)
 add_executable(companion_model_test companion_model_test.c ../main/companion_model.c)
+add_executable(character_protocol_test ../tests/character_protocol_test.c ../main/companion_character_protocol.c)
+target_include_directories(character_protocol_test PRIVATE ../main)
 target_include_directories(companion_model_test PRIVATE ../main)
 if(MSVC)
     target_compile_options(companion_model_test PRIVATE /utf-8 /UNDEBUG)
+    target_compile_options(character_protocol_test PRIVATE /utf-8 /UNDEBUG)
 else()
     target_compile_options(companion_model_test PRIVATE -UNDEBUG)
+    target_compile_options(character_protocol_test PRIVATE -UNDEBUG)
 endif()
